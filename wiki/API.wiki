@@ -1,0 +1,182 @@
+#labels Featured
+#多乐趣API接口文档V1
+
+= 简介 =
+
+多乐趣API接口,能够帮助第三方开发者开发各种应用（包括不限于Web应用、手机应用等等）。多乐趣API目前正在开发中，期待您的反馈和建议。
+
+= 服务器地址 =
+Host: api.duolequ.cn
+
+= Authentication =
+  * 当前API支持用户无Cookie认证，sessionid嵌入在url中。（这种方式安全级别较低）
+  * 多乐趣计划支持Basic Authentication 和 OAuth Authentication
+
+= User agents =
+Set your User-Agent header to something identifiable. Default identifiers like "Mozilla" or "libwww-perl/5.808" may get banned from time to time because of rate limits.
+
+We keep track of each unique User-Agent (app name, major/minor versions and log information included) you send us. To help us identify your client more easily, we highly recommend that your User-Agent fit a more structured format: separate your app's name from the major and minor versions (and any other identifying information). We suggest the separator be a colon (":") to avoid conflicts with other delimiters. We also suggest that you send down the application's version number immediately after the separator. After this phrase, you're free to include any other uniquely identifying information you wish (for logging, debug purposes, etc).
+
+Example: 
+Cool Square:4.0.0.247 Profile/MIDP-2.0 Configuration/CLDC-1.1 VendorID/105 Debug/Blackberry|9630|EMULATOR
+|| *phone* || *value* ||
+|| iphone || iphone:1.0.0 ||
+|| andorid || andorid:1.0.0 ||
+|| symbian || symbian 3rd fp1:1.0.0 ||
+
+= Formats =
+多乐趣支持XML/JSON/Atom输出，这个需要通过接口参数中alt来指定。（暂时只支持json）alt=[xml|json|atom]
+
+= Rate limiting =
+使用频率限制，在测试期间API使用频率为500k/day。
+
+= Data struct =
+|| *data*|| *field*||
+|| user || [id,username,email,first_name,last_name]||
+|| profile || [sex,loc,photo,min_photo,twitter,facebook,google,sina,renren,ping]||
+|| badge || [name,photo,min_photo,desc]||
+|| venue || [id,name,city,addr,phone,type,desc,special,lat,lng,distance]||
+|| checkin || [id,user,msg,venue,date,comments]||
+|| comments || [checkin,checkin] ||
+|| tip|| [id,user,msg,venue,date]||
+|| todo || [id,user,venue,msg,date] ||
+|| point || [user,city,current,total] ||
+|| price|| [name,desc,rmb,date] ||
+|| photo|| [title,min_photo,date] ||
+
+= API Interface =
+|| *Intro* ||*URL* || *Method* ||*param* || *Response* || *Auth* || *说明* ||
+|| || || *设置相关* || ||
+|| 用户注册 || /v1/signup || POST || username=&password&email&sex=[M|F]&phone&city || {"success":True,"sessionid":"67abc73a2dfccea879fca5c40d979b1b","user":user,"rt":"signup"}{"success":False,"err":{"username":[错误原因],"email":[错误原因]},"rt":"signup"}|| ||
+|| 用户登陆 || /v1/login || POST || username=&password || {"success":True,"sessionid":"67abc73a2dfccea879fca5c40d979b1b","user":user,"rt":"login"} || ||sessionid用于标记用户身份 ||
+|| 用户退出 || /v1/logout || POST || sessionid || {"success":True,"rt":"logout"} || ||sessionid用于标记用户身份 ||
+|| 找回密码 || /v1/lostpwd || POST || email || {"success":True,"rt":"lostpwd"} || ||不需要认证 ||
+|| 开启通知 || /v1/setpings || POST || self=[on|off|goodnight]&fid=xxx|| {"success":True,"rt":"setpings"} ||需要认证 ||设置fid的好友on开启通知off关闭通知goodnight晚上关闭通知 ||
+|| 排行榜 || /v1/leaderboard || GET || q=[all|friends]&pn=&rn= || {"success":True,"rt":"leaderboard","leaders":[point,point...]} || ||需要认证 ||
+|| || || *用户相关* || ||
+|| 用户查询 || /v1/user/search || GET || q=xxx&sessionid=xxx || {"success":True,,...],"rt":"users"} || 需要认证 ||
+|| 用户详细 || /v1/user/uid || GET || sessionid=xxx || {"success":True","rt":"user","user":user,"profile":profile,"friends":[],"badges":[],"mayors":[venue,venue...]} || 需要认证 || userid=uid的详细信息||
+|| 用户照片 || /v1/user/uid/photo || GET || sessionid=xxx || {"success":True","rt":"user_photo","photos":[photo,photo...]} || 需要认证 || userid=uid的详细信息||
+
+
+|| || || *好友相关* || ||
+|| 用户的好友列表查询 || /v1/user/uid/friends|| GET || sessionid=xxx&type=[good|add|black] || {"success":True,"rt":"friends","user":user,"friends":[user,user...]}|| 需要认证 ||good表示好友列表 add好友请求列表 black表示黑名单 ||
+|| 好友操作 || /v1/friendop || POST || op=[add|accept|delete|black]&fid=xxx&sessionid=xxx || {"success":True,"rt":"friendop","fid":fid} || 需要认证 || add表示添加好友 accept表示接受好友请求 delete表示删除好友 black表示添加到黑名单||
+
+|| || || *场所相关* || ||
+|| 场所查询 || /v1/venue/search || GET || lat=39.9&lng=116.4&q=餐馆&category=xxx&sessionid=xxx || {"success":True,"venues": [venue,venue...],"rt":"venues"} || 需要认证 || 按距离排序||
+|| 场所 || /v1/venue/vid || GET || sessionid=xxx || {"success":True","rt":"venue","venue":venue,"mayor":user,"visitors":[userid,userid...],"tips":[],"special":[price,price,]} || 需要认证 ||venueid=id的详细信息||
+|| 场所的签到记录 || /v1/venue/vid/checkin || GET || sinceid&sessionid=xxx || {"success":True","rt":"venue_checkin","venue":venue,"checkins":[]} || 需要认证 ||venue的签到信息列表checkin.id>sinceid||
+|| 场所的评论记录 || /v1/venue/vid/tip || GET || sinceid&sessionid=xxx || {"success":True","rt":"venue_tips","venue":venue,"tips":[]} || 需要认证 ||tip的签到信息列表checkin.id>sinceid||
+|| 场所的照片记录 || /v1/venue/vid/photo || GET || sessionid=xxx || {"success":True","rt":"venue_photo","photos":[]} || 需要认证 ||||
+
+|| 增加场所 || /v1/addvenue || POST || name=xxx&addr=xxx&phone=xxx&type=xxx&desc=xxx&lat=xx&lng==xx&sessionid=xxx || {"success":True","rt":"add_venue","venue":venue} {"success":False","rt":"add_venue","err":{"username":[错误原因],"email":[错误原因]}} || 需要认证,lat,lng可选 ||
+|| 场所增加照片 || /v1/venue/addphoto || POST || vid=&title=&photo=xxx&sessionid=xxx || {"success":True","rt":"addphoto","venue":venue} || 需要认证 ||文件上传，采用multipart/form-data方式||
+
+
+|| || || *评论相关* || ||
+|| 好友评论列表 || /v1/tips|| GET || lat=xx&lng=xx&sessionid=xxx || {"success":True,"rt":"friend_tips|nearby_tips","user":user,"tips":[]} || 需要认证 || lat&lng可选，有lat&lng返回nearby的tips，没有lat&lng返回好友tips||
+|| 场所增加评论或待办 || /v1/addtip || POST || vid=xxx&msg=xx&type=[0|1]&sessionid=xxx || {"success":True","rt":"addtip","tip":tip,"badge":role} || 需要认证 ||type=0表示tip,=1表示todo,badge表示本次动作产生的新头衔 ||
+|| 评论改为待办 || /v1/marktodo || POST || tid=xxx&sessionid=xxx || {"success":True","rt":"marktodo"} || 需要认证 || 未实现 ||
+|| 评论改为已完成 || /v1/markdone || POST || tid=xxx&sessionid=xxx || {"success":True","rt":"markdone"} || 需要认证 || 未实现 ||
+
+|| || || *签到相关* || ||
+|| 签到 || /v1/addcheckin|| POST || [cid=cid]&vid=xx&vname=xx&msg=&lat&lng&pub=[1|2|3]&tip=[0|1]&sina&sessionid=xxx || {"success":True,"rt":"addcheckin","checkin":checkin,"badge":role} {"success":False,"rt":"addcheckin"} || 需要认证 ||如果有cid表示是回复cid的checkin,pub=1表示公开 2表示好友可见 3表示私密,tip=1表示msg同步到该场所tips下 返回的badge表示这次动作产生的新badge ||
+|| 好友签到列表 || /v1/checkins|| GET || lat=xx&lng=xx&checkin=[0|1]&sessionid=xxx || {"success":True,"rt":"friend_checkins|nearby_checkins","user":user,"checkins":[]} || 需要认证 || lat&lng可选，有返回nearby的checkins，没有返回friends checkins(每个好友只有最新的一条checkin记录),checkin=0时返回checkin和shout的混合记录，checkin=1时只返回checkin记录 ||
+|| 用户签到记录 || /v1/user/id/checkin|| GET || sinceid=xx&checkin=[0|1]&sessionid=xxx || {"success":True,"rt":"user_checkin","user":user,"checkins":[]} || 需要认证 ||sinceid表示返回的记录ID>sinceid，用于动态刷新时获取最新的数据,checkin=0时返回checkin和shout的混合记录，checkin=1时只返回checkin记录||
+
+|| || || *定位相关* || ||
+|| 定位 || /v1/position|| POST || lat&lng&cellid&wifi&imei || {"success":True,"rt":"position"} || 需要认证 || cellid格式#MCC#MNC#LAC#ID wifi取mac ||
+
+== Venue类型 ==
+#餐饮
+(1,'西餐'),
+(2,'中餐'),
+(3,'韩餐'),
+(4,'日餐'),
+(5,'快餐'),
+
+#酒店
+(11,'星级宾馆'),
+(12,'快捷酒店'),
+(13,'招待所'),
+
+
+#艺术娱乐
+(21,'KTV'),
+(22,'网吧'),
+(23,'电影院'),
+(24,'健身中心'),
+(25,'演艺场所'),
+(26,'娱乐场所'),
+(27,'酒吧'),
+(28,'咖啡厅'),
+(29,'茶室'),
+(30,'运动场馆'),
+(31,'台球馆'),
+(32,'保龄球'),
+(33,'洗浴'),
+(34,'美容美发'),
+(35,'婚纱摄影'),
+(36,'建材家具'),
+
+
+#商业
+(40,'购物中心'),
+(41,'写字楼'),
+(42,'银行/ATM'),
+(43,'超市'),
+(44,'药店'),
+(45,'汽车专卖'),
+(46,'书店'),
+(47,'花店'),
+(48,'礼品店'),
+
+#教育公共设施
+(60,'学校'),
+(61,'邮局'),
+(62,'医院'),
+(63,'公园'),
+(64,'政府机构'),
+(65,'公共设施'),
+(66,'楼盘小区'),
+(67,'加油站'),
+(68,'停车场'),
+(69,'公交车站'),
+
+#旅游
+(70,'风景区'),
+(71,'度假村')
+
+== 参数说明 ==
+  * GET操作可以在FF上观察结果
+  * POST采用application/x-www-form-urlencoded
+  * success :表示本次操作是否成功
+  * rt :表示本次的操作类型
+  * err:表示本次操作服务器端失败原因说明
+  * info:表示本次操作服务器返回说明
+  * pn/rn:用于控制结果数量，pn表示当前页（从1开始计数），rn表示每页的数量（>0）
+  * 固定参数，sw=[iphone|andorid|blackberry|...]&imei=&
+
+== 错误说明 ==
+  * error HTTP Method使用错误（GET/POST使用错误），返回HTTP Status 501
+  * ratelimited 超过粒度控制，返回HTTP Status 400
+  * unauthorized 用户未认证，返回HTTP Status 401
+
+= 手机软件开发 =
+
+== Blackberry ==
+
+== Nokia ==
+
+== Iphone ==
+
+== Andorid ==
+
+= Change Log =
+  * 2010.4.29增加venue 类型
+  * 2010.4.22调整和兼容foursquare api
+  * 2010.3.25增加好友/nearby签到记录，venue详细页
+  * 2010.3.9完成API服务器端实现
+  * 2010.2.25增加了用户认证、统一返回参数
+  * 2010.2.24创建API Interface
